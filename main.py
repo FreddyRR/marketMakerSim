@@ -12,11 +12,10 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
     price = startPrice
     for i in range(totalTime):
         price += random.gauss(mu, sigma)
+        timeRemaining = (totalTime - i - 1) / totalTime
+        reservationPrice = price - inventory * gamma * sigma**2 * timeRemaining
         bid = price - spreadRadius
         ask = price + spreadRadius
-        timeRemaining = totalTime - i - 1
-        reservationPrice = price - inventory * gamma * sigma**2 * timeRemaining
-        print(timeRemaining)
         priceValues[i+1] = price
         resPriceValues[i+1] = reservationPrice
         bidValues[i+1] = bid
