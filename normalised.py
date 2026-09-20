@@ -9,14 +9,14 @@ def simulation(startPrice, totalTime, pBuyer, pSeller, mu, sigma, gamma, liquidi
     resPriceValues = [startPrice for i in range(totalTime+1)]
     pnlValues = [0 for i in range(totalTime+1)]
     spreadValues = [0 for i in range(totalTime+1)]
-    spreadValues[0] = gamma * sigma**2 * totalTime + (2 / gamma) * math.log(1 + (gamma / liquidity))
+    spreadValues[0] = gamma * sigma**2 + (2 / gamma) * math.log(1 + (gamma / liquidity))
     bidValues = [startPrice - spreadValues[0]/2 for i in range(totalTime+1)]
     askValues = [startPrice + spreadValues[0]/2 for i in range(totalTime+1)]
     price = startPrice
 
     for i in range(totalTime):
-        price += random.gauss(mu, sigma)
-        timeRemaining = totalTime - i - 1
+        price += random.gauss(mu, sigma * math.sqrt(1 / totalTime))
+        timeRemaining = (totalTime - i - 1) / totalTime
         reservationPrice = price - inventory * gamma * sigma**2 * timeRemaining
         spread = gamma * sigma**2 * timeRemaining + (2 / gamma) * math.log(1 + (gamma / liquidity))   # Spread gets tighter, less risk-averse as time goes on
         bid = reservationPrice - spread/2
@@ -53,8 +53,8 @@ def simulation(startPrice, totalTime, pBuyer, pSeller, mu, sigma, gamma, liquidi
 
 '''totalPNL = 0
 for i in range(5000):
-    totalPNL += simulation(100, 1000, 0.1, 0.1, 0, 1, 1, 1.5, False)
+    totalPNL += simulation(100, 1000, 0.1, 0.1, 0, 1, 0.1, 1.5, False)
 print("Total PNL: " + str(totalPNL))
 print("Average PNL: " + str(totalPNL/50000))'''
 
-simulation(100, 200, 0.1, 0.1, 0, 1, 0.01, 1.5, True)
+simulation(100, 200, 0.1, 0.1, 0, 2, 0.1, 1.5, True)
