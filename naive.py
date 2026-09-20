@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import random
 
 def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, detailed):
@@ -16,6 +15,7 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
         priceValues[i+1] = price
         bidValues[i+1] = bid
         askValues[i+1] = ask
+        # Fixed probabilities of a single order for each of buy and sell separately
         if random.random() < pBuyer:
             buyers += 1
             inventory -= 1
@@ -26,7 +26,8 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
             cash -= bid
         pnl = cash + inventory * price
         pnlValues[i+1] = pnl
-    
+
+    # This displays some nice graphs
     if detailed:
         fig, ax = plt.subplots()
         ax.plot(priceValues, "black", label="Price", linewidth=1.5)
@@ -38,6 +39,7 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
         plt.show()
     return pnl
 
+# Messing around with repeated simulations to find long-term PNL
 totalPNL = 0
 for i in range(5000):
     totalPNL += simulation(100, 0.05, 1000, 0.1, 0.1, 0, 1, False)
