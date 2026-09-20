@@ -1,25 +1,30 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import math
 
-def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, gamma, detailed):
+def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, gamma, liquidity, detailed):
     inventory, cash, buyers, sellers, pnl = 0, 0, 0, 0, 0
     priceValues = [startPrice for i in range(totalTime+1)]
     resPriceValues = [startPrice for i in range(totalTime+1)]
     bidValues = [startPrice - spreadRadius for i in range(totalTime+1)]
     askValues = [startPrice + spreadRadius for i in range(totalTime+1)]
     pnlValues = [0 for i in range(totalTime+1)]
+    spreadValues = [0 for i in range(totalTime+1)]
+    spreadValues[0] = gamma * sigma**2 + (2 / gamma) * math.log(1 + (gamma / liquidity))
     price = startPrice
     for i in range(totalTime):
         price += random.gauss(mu, sigma)
         timeRemaining = (totalTime - i - 1) / totalTime
         reservationPrice = price - inventory * gamma * sigma**2 * timeRemaining
+        spread = gamma * sigma**2 * timeRemaining + (2 / gamma) * math.log(1 + (gamma / liquidity))   # Spread gets tighter, less risk-averse as time goes on
         bid = price - spreadRadius
         ask = price + spreadRadius
         priceValues[i+1] = price
         resPriceValues[i+1] = reservationPrice
         bidValues[i+1] = bid
         askValues[i+1] = ask
+        spreadValues[i+1] = spread
         if random.random() < pBuyer:
             buyers += 1
             inventory -= 1
@@ -40,13 +45,15 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
         plt.legend()
         fig, ax = plt.subplots()
         ax.plot(pnlValues, "pink", label="PNL")
+        fig, ax = plt.subplots()
+        ax.plot(spreadValues, "orange", label="Spread")
         plt.show()
     return pnl
 
 '''totalPNL = 0
 for i in range(5000):
-    totalPNL += simulation(100, 0.05, 1000, 0.1, 0.1, 0, 1, 0.1, False)
+    totalPNL += simulation(100, 0.05, 1000, 0.1, 0.1, 0, 1, 0.1, 1.4, False)
 print("Total PNL: " + str(totalPNL))
 print("Average PNL: " + str(totalPNL/50000))'''
 
-simulation(100, 0.1, 100, 0.1, 0.1, 0, 1, 0.1, True)
+simulation(100, 0.1, 1000, 0.1, 0.1, 0, 1, 0.1, 1.4, True)
