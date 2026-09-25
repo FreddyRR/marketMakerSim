@@ -12,9 +12,11 @@ def simulation(startPrice, spreadRadius, totalTime, pBuyer, pSeller, mu, sigma, 
         price += random.gauss(mu, sigma)
         bid = price - spreadRadius
         ask = price + spreadRadius
-        priceValues[i+1] = price
-        bidValues[i+1] = bid
-        askValues[i+1] = ask
+        # Update the lists if detailed results and graphs are desired
+        if detailed:
+            priceValues[i+1] = price
+            bidValues[i+1] = bid
+            askValues[i+1] = ask
         # Fixed probabilities of a single order for each of buy and sell separately
         if random.random() < pBuyer:
             buyers += 1

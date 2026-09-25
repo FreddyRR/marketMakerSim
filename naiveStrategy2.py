@@ -4,7 +4,7 @@ import math
 
 # I use the same market setup as normalised.py but the same strategy as naive.py
 def simulation(startPrice, spreadRadius, totalTime, mu, sigma, liquidity, A, detailed):
-    inventory, cash, buyers, sellers, pnl = 0, 0, 0, 0, 0
+    inventory, cash, fills, pnl = 0, 0, 0, 0
     priceValues = [startPrice for i in range(totalTime+1)]
     bidValues = [startPrice - spreadRadius for i in range(totalTime+1)]
     askValues = [startPrice + spreadRadius for i in range(totalTime+1)]
@@ -16,16 +16,18 @@ def simulation(startPrice, spreadRadius, totalTime, mu, sigma, liquidity, A, det
         price += random.gauss(mu, sigma * math.sqrt(1 / totalTime))
         bid = price - spreadRadius
         ask = price + spreadRadius
-        priceValues[i+1] = price
-        bidValues[i+1] = bid
-        askValues[i+1] = ask
+        # Update the lists if detailed results and graphs are desired
+        if detailed:
+            priceValues[i+1] = price
+            bidValues[i+1] = bid
+            askValues[i+1] = ask
         # Fixed probabilities of a single order for each of buy and sell separately
         if random.random() < pBuyer:
-            buyers += 1
+            fills += 1
             inventory -= 1
             cash += ask
         if random.random() < pSeller:
-            sellers += 1
+            fills += 1
             inventory += 1
             cash -= bid
         pnl = cash + inventory * price
@@ -41,14 +43,14 @@ def simulation(startPrice, spreadRadius, totalTime, mu, sigma, liquidity, A, det
         fig, ax = plt.subplots()
         ax.plot(pnlValues, "pink", label="PNL")
         plt.show()
-    return pnl
+    return [pnl, fills]
 
 # Messing around with repeated simulations to find long-term PNL
 def monteCarlo(n):
     totalPNL, squareSum = 0, 0
     simulationPNLList = [0 for i in range(n)]
     for i in range(n):
-        simulationPNLList[i] = simulation(100, 6, 200, 0, 2, 1.5, 140, False)
+        simulationPNLList[i] = (simulation(100, 6, 200, 0, 2, 1.5, 140, False))[0]
         totalPNL += simulationPNLList[i]
         squareSum += (simulationPNLList[i])**2
     print("Total PNL: " + str(totalPNL))

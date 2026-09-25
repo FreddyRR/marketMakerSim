@@ -3,7 +3,7 @@ import random
 import math
 
 def simulation(startPrice, totalTime, mu, sigma, gamma, liquidity, A, detailed):
-    inventory, cash, buyers, sellers, pnl = 0, 0, 0, 0, 0
+    inventory, cash, fills, pnl = 0, 0, 0, 0
     priceValues = [startPrice for i in range(totalTime+1)]
     resPriceValues = [startPrice for i in range(totalTime+1)]
     pnlValues = [0 for i in range(totalTime+1)]
@@ -20,19 +20,20 @@ def simulation(startPrice, totalTime, mu, sigma, gamma, liquidity, A, detailed):
         spread = gamma * sigma**2 * timeRemaining + (2 / gamma) * math.log(1 + (gamma / liquidity))   # Spread gets tighter, less risk-averse as time goes on
         bid = reservationPrice - spread/2       # Update bid and ask
         ask = reservationPrice + spread/2
-        # Update the lists
-        priceValues[i+1], resPriceValues[i+1], bidValues[i+1], askValues[i+1], spreadValues[i+1] = price, reservationPrice, bid, ask, spread
+        # Update the lists if detailed results and graphs are desired
+        if detailed:
+            priceValues[i+1], resPriceValues[i+1], bidValues[i+1], askValues[i+1], spreadValues[i+1] = price, reservationPrice, bid, ask, spread
 
         # ask - price is delta^a and price - bid is delta^b in the research paper
         # for either case, the Poisson rate is directly proportional to exp(-k * delta) because traders want to buy or sell close to the mid price
         # at most one of each bid and ask orders may be handled in a single step, but the probability of receiving more is relatively small anyway
         deltaA, deltaB = ask - price, price - bid       # Delta variables as stated in the paper
         if random.random() < (A / totalTime) * math.exp(-liquidity * deltaA):
-            buyers += 1
+            fills += 1
             inventory -= 1
             cash += ask     # Gain cash if selling inventory
         if random.random() < (A / totalTime) * math.exp(-liquidity * deltaB):
-            sellers += 1
+            fills += 1
             inventory += 1
             cash -= bid     # Lose cash if buying inventory
         # Now update PNL
@@ -49,13 +50,13 @@ def simulation(startPrice, totalTime, mu, sigma, gamma, liquidity, A, detailed):
         fig, ax = plt.subplots()
         ax.plot(pnlValues, "pink", label="PNL")     # PNL graph on its own
         plt.show()
-    return pnl
+    return [pnl, fills]
 
 def monteCarlo(n):
     totalPNL, squareSum = 0, 0
     simulationPNLList = [0 for i in range(n)]
     for i in range(n):
-        simulationPNLList[i] = simulation(100, 200, 0, 2, 0.1, 1.5, 140, False)
+        simulationPNLList[i] = (simulation(100, 200, 0, 2, 0.1, 1.5, 140, False))[0]
         totalPNL += simulationPNLList[i]
         squareSum += (simulationPNLList[i])**2
     print("Total PNL: " + str(totalPNL))

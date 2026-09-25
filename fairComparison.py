@@ -13,7 +13,7 @@ def getPrices(startPrice, totalTime, mu, sigma):
 # A mirror of avStrategy.py
 def avStrategy(prices, totalTime, sigma, gamma, liquidity, A, detailed):
     price = prices[0]       # Starting values
-    inventory, cash, buyers, sellers, pnl = 0, 0, 0, 0, 0
+    inventory, cash, fills, pnl = 0, 0, 0, 0
     resPriceValues = [price for i in range(totalTime+1)]
     pnlValues = [0 for i in range(totalTime+1)]
     spreadValues = [0 for i in range(totalTime+1)]
@@ -28,19 +28,20 @@ def avStrategy(prices, totalTime, sigma, gamma, liquidity, A, detailed):
         spread = gamma * sigma**2 * timeRemaining + (2 / gamma) * math.log(1 + (gamma / liquidity))   # Spread gets tighter, less risk-averse as time goes on
         bid = reservationPrice - spread/2       # Update bid and ask
         ask = reservationPrice + spread/2
-        # Update the lists
-        resPriceValues[i+1], bidValues[i+1], askValues[i+1], spreadValues[i+1] = reservationPrice, bid, ask, spread
+        # Update the lists if detailed results and graphs are desired
+        if detailed:
+            resPriceValues[i+1], bidValues[i+1], askValues[i+1], spreadValues[i+1] = reservationPrice, bid, ask, spread
 
         # ask - price is delta^a and price - bid is delta^b in the research paper
         # for either case, the Poisson rate is directly proportional to exp(-k * delta) because traders want to buy or sell close to the mid price
         # at most one of each bid and ask orders may be handled in a single step, but the probability of receiving more is relatively small anyway
         deltaA, deltaB = ask - price, price - bid
         if random.random() < (A / totalTime) * math.exp(-liquidity * deltaA):
-            buyers += 1
+            fills += 1
             inventory -= 1
             cash += ask     # Gain cash if selling inventory
         if random.random() < (A / totalTime) * math.exp(-liquidity * deltaB):
-            sellers += 1
+            fills += 1
             inventory += 1
             cash -= bid     # Lose cash if buying inventory
         # Now update PNL
@@ -57,13 +58,13 @@ def avStrategy(prices, totalTime, sigma, gamma, liquidity, A, detailed):
         fig, ax = plt.subplots()
         ax.plot(pnlValues, "pink", label="PNL")     # PNL graph on its own
         plt.show()
-    return pnl
+    return [pnl, fills]
 
 
 # A mirror of naiveStrategy2.py
 def naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, detailed):
     price = prices[0]       # Starting values
-    inventory, cash, buyers, sellers, pnl = 0, 0, 0, 0, 0
+    inventory, cash, fills, pnl = 0, 0, 0, 0
     bidValues = [price - spreadRadius for i in range(totalTime+1)]
     askValues = [price + spreadRadius for i in range(totalTime+1)]
     pnlValues = [0 for i in range(totalTime+1)]
@@ -77,11 +78,11 @@ def naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, detailed):
         askValues[i+1] = ask
         # Fixed probabilities of a single order for each of buy and sell separately
         if random.random() < pBuyer:
-            buyers += 1
+            fills += 1
             inventory -= 1
             cash += ask
         if random.random() < pSeller:
-            sellers += 1
+            fills += 1
             inventory += 1
             cash -= bid
         pnl = cash + inventory * price
@@ -97,29 +98,39 @@ def naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, detailed):
         fig, ax = plt.subplots()
         ax.plot(pnlValues, "pink", label="PNL")     # PNL graph on its own
         plt.show()
-    return pnl
+    return [pnl, fills]
 
 def monteCarlo(n):
     # Start tracking PNL per list of prices for each simulation
     avPNLList = [0 for i in range(n)]
     naivePNLList = [0 for i in range(n)]
-    avTotalPNL, avSquareSum, naiveTotalPNL, naiveSquareSum = 0, 0, 0, 0
+    avFillList = [0 for i in range(n)]
+    naiveFillList = [0 for i in range(n)]
+    avTotalPNL, avSquareSum, avTotalFills, naiveTotalPNL, naiveSquareSum, naiveTotalFills = 0, 0, 0, 0, 0, 0
 
     for i in range(n):
         prices = getPrices(startPrice, totalTime, mu, sigma)    # A random list of prices used by both simulations
-        avPNLList[i] = avStrategy(prices, totalTime, sigma, gamma, liquidity, A, False)
-        naivePNLList[i] = naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, False)
+        avResult = avStrategy(prices, totalTime, sigma, gamma, liquidity, A, False)
+        naiveResult = naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, False)
+        avPNLList[i], naivePNLList[i] = avResult[0], naiveResult[0]     # Update PNL lists
+        avFillList[i], naiveFillList[i] = avResult[1], naiveResult[1]    # Update fill lists
         avTotalPNL += avPNLList[i]
         avSquareSum += (avPNLList[i])**2
         naiveTotalPNL += naivePNLList[i]
         naiveSquareSum += (naivePNLList[i])**2
+        avTotalFills += avFillList[i]
+        naiveTotalFills += naiveFillList[i]
 
     print("AV Mean PNL: " + str(avTotalPNL / n))     # Output results
     print("AV Sample Variance: " + str((avSquareSum - avTotalPNL**2 / n) / (n-1)))
+    print("AV Mean Fills: " + str(avTotalFills / n))
     print("Naive Mean PNL: " + str(naiveTotalPNL / n))
     print("Naive Sample Variance: " + str((naiveSquareSum - naiveTotalPNL**2 / n) / (n-1)))
+    print("Naive Mean Fills: " + str(naiveTotalFills / n))
 
 # Main program finished, use the below space to perform Monte Carlo simulations or generate graphs
+
+prices = getPrices(100, 200, 0, 2)
 
 startPrice = float(input("Enter startPrice: "))
 totalTime = int(input("Enter totalTime: "))
@@ -129,5 +140,9 @@ gamma = float(input("Enter gamma: "))
 liquidity = float(input("Enter liquidity: "))
 A = float(input("Enter A: "))
 spreadRadius = (1 / gamma) * math.log(1 + (gamma / liquidity))
+
+avStrategy(prices, totalTime, sigma, gamma, liquidity, A, True)
+naiveStrategy(prices, spreadRadius, totalTime, liquidity, A, True)
+
 n = int(input("Enter number of trials: "))
 monteCarlo(n)
