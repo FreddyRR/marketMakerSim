@@ -24,4 +24,8 @@ A list of prices is generated using a Brownian random walk where the change in p
  - avStrategy.py is an implemenation of the Avellaneda-Stoikov strategy which bases bid and ask quotes on a reservation price which is adjusted to reduce inventory risk while maintaining expected PNL. For example, if inventory is large, the market maker will try to sell, and decrease its reservation price (and its bid and ask quotes accordingly) so traders are more likely to buy from the market maker than sell.
 
 ## Results
-TBA
+I ran a Monte Carlo simulation with 50000 trials to compare the results of the two models in fairComparison.py, using the parameter values suggested in the Variables table. Std. Dev. is the standard deviation of P&L. The Sharpe-ish Ratio is simply Mean P&L / Std. Dev. My results are consistent with those in the original 2008 Avellaneda-Stoikov paper, where naïve is referred to as "symmetric" and the Avellaneda-Stoikov strategy is referred to as "inventory". The Avellaneda-Stoikov strategy provided a comparable mean P&L to the naïve strategy and reduced the standard deviation by 52%, making it worthwhile to market makers for its reduction in inventory risk.
+| Strategy           | Mean P&L | Sample Variance | Std. Dev. | Sharpe-ish Ratio | Mean Fills |
+| ------------------ | -------- | --------------- | --------- | ---------------- | ---------- |
+| Naïve              | 68.64    | 185.0           | 13.60     | 5.047            | 106.4      |
+| Avellaneda-Stoikov | 64.88    | 42.17           | 6.494     | 9.991            | 97.00      |
